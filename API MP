@@ -1,0 +1,59 @@
+{
+  "name": "mp-api",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mercadopago": "^1.5.14",
+    "cors": "^2.8.5"
+  }
+}
+const express = require("express");
+const cors = require("cors");
+const mercadopago = require("mercadopago");
+
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+// A chave MP será configurada NO RENDER, não aqui
+mercadopago.configure({
+  access_token: process.env.MP_ACCESS_TOKEN
+});
+
+// Rota de pagamento
+app.post("/payment", async (req, res) => {
+  try {
+    const { title, quantity, price } = req.body;
+
+    const preference = await mercadopago.preferences.create({
+      items: [
+        {
+          title,
+          quantity,
+          currency_id: "BRL",
+          unit_price: price
+        }
+      ]
+    });
+
+    res.json({
+      init_point: preference.body.init_point
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message
+    });
+  }
+});
+
+// Porta do servidor
+app.get("/", (req, res) => {
+  res.send("API do Mercado Pago funcionando!");
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log("Servidor rodando na porta " + PORT);
+});
